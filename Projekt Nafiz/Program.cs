@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Globalization;
 
 public class Filament
 {
@@ -69,19 +70,13 @@ class Program
         Console.Write("🧪 Material: ");
         string material = Console.ReadLine();
 
-        double gewicht;
         Console.Write("⚖️ Gewicht in Gramm: ");
-        while (!double.TryParse(Console.ReadLine(), out gewicht))
-        {
-            Console.Write("❌ Bitte gib eine gültige Zahl ein für Gewicht: ");
-        }
+        double gewicht = double.Parse(Console.ReadLine().Replace(',', '.'),
+            CultureInfo.InvariantCulture);
 
-        double preisProKg;
         Console.Write("💶 Preis pro Kilogramm (€): ");
-        while (!double.TryParse(Console.ReadLine(), out preisProKg))
-        {
-            Console.Write("❌ Bitte gib eine gültige Zahl ein für Preis pro kg: ");
-        }
+        double preisProKg = double.Parse(Console.ReadLine().Replace(',', '.'),
+            CultureInfo.InvariantCulture);
 
         Filament neuesFilament = new Filament
         {
@@ -109,7 +104,7 @@ class Program
         int index = 1;
         foreach (var f in filamentListe)
         {
-            Console.WriteLine($"{index++}. {f.Name} | {f.Farbe} | {f.Material} | {f.Gewicht}g | {f.PreisProKg} €/kg");
+            Console.WriteLine($"{index++}. {f.Name} | {f.Farbe} | {f.Material} | {f.Gewicht}g | {f.PreisProKg:F2} €/kg");
         }
     }
 
@@ -123,24 +118,28 @@ class Program
 
         FilamenteAnzeigen();
         Console.Write("\n➡️ Nummer des gewünschten Filaments: ");
-        int auswahl;
-        while (!int.TryParse(Console.ReadLine(), out auswahl) || auswahl < 1 || auswahl > filamentListe.Count)
+        if (!int.TryParse(Console.ReadLine(), out int auswahl) || auswahl < 1 || auswahl > filamentListe.Count)
         {
-            Console.Write("❌ Ungültige Auswahl. Bitte erneut eingeben: ");
+            Console.WriteLine("❌ Ungültige Auswahl.");
+            return;
         }
 
         var f = filamentListe[auswahl - 1];
 
-        double verbrauch;
-        Console.Write("🧾 Verbrauch in Gramm (laut Slicer): ");
-        while (!double.TryParse(Console.ReadLine(), out verbrauch))
+        Console.Write("🧾 Verbrauch in Gramm (z. B. 23,5): ");
+        string verbrauchInput = Console.ReadLine().Replace(',', '.');
+
+        if (!double.TryParse(verbrauchInput, NumberStyles.Any, CultureInfo.InvariantCulture, out double verbrauch))
         {
-            Console.Write("❌ Bitte gib eine gültige Zahl für Verbrauch ein: ");
+            Console.WriteLine("❌ Ungültiger Verbrauchswert.");
+            return;
         }
 
         double kosten = (verbrauch / 1000.0) * f.PreisProKg;
+        double rest = f.Gewicht - verbrauch;
 
-        Console.WriteLine($"\n💰 Druckkosten: {kosten:F2} € mit {f.Name} ({f.Material})");
+        Console.WriteLine($"\n💰 Druckkosten: {kosten:F2} €");
+        Console.WriteLine($"📦 Restgewicht von {f.Name}: {rest:F1}g");
     }
 
     static void DatenSpeichern()
