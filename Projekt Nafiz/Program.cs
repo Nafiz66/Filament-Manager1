@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.Json;
-using System.Globalization;
 
 public class Filament
 {
@@ -27,7 +26,10 @@ class Program
         bool laufend = true;
         while (laufend)
         {
+            Console.Clear();
+            Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine("\n🎛️ Filament-Manager");
+            Console.ResetColor();
             Console.WriteLine("1 – Neues Filament hinzufügen");
             Console.WriteLine("2 – Filamente anzeigen");
             Console.WriteLine("3 – Druckkosten berechnen");
@@ -37,23 +39,15 @@ class Program
 
             switch (eingabe)
             {
-                case "1":
-                    FilamentHinzufuegen();
-                    break;
-                case "2":
-                    FilamenteAnzeigen();
-                    break;
-                case "3":
-                    DruckkostenBerechnen();
-                    break;
-                case "4":
-                    laufend = false;
-                    Console.WriteLine("📦 Programm wird beendet...");
-                    break;
-                default:
-                    Console.WriteLine("⚠️ Ungültige Eingabe");
-                    break;
+                case "1": FilamentHinzufuegen(); break;
+                case "2": FilamenteAnzeigen(); break;
+                case "3": DruckkostenBerechnen(); break;
+                case "4": laufend = false; Console.WriteLine("📦 Programm wird beendet..."); break;
+                default: Console.ForegroundColor = ConsoleColor.Red; Console.WriteLine("⚠️ Ungültige Eingabe"); Console.ResetColor(); break;
             }
+
+            Console.WriteLine("\nDrücke eine beliebige Taste, um fortzufahren...");
+            Console.ReadKey();
         }
     }
 
@@ -71,12 +65,10 @@ class Program
         string material = Console.ReadLine();
 
         Console.Write("⚖️ Gewicht in Gramm: ");
-        double gewicht = double.Parse(Console.ReadLine().Replace(',', '.'),
-            CultureInfo.InvariantCulture);
+        double gewicht = double.Parse(Console.ReadLine());
 
         Console.Write("💶 Preis pro Kilogramm (€): ");
-        double preisProKg = double.Parse(Console.ReadLine().Replace(',', '.'),
-            CultureInfo.InvariantCulture);
+        double preisProKg = double.Parse(Console.ReadLine());
 
         Filament neuesFilament = new Filament
         {
@@ -89,14 +81,18 @@ class Program
 
         filamentListe.Add(neuesFilament);
         DatenSpeichern();
+        Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine("✅ Filament gespeichert!");
+        Console.ResetColor();
     }
 
     static void FilamenteAnzeigen()
     {
         if (filamentListe.Count == 0)
         {
+            Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine("📭 Keine Filamente vorhanden.");
+            Console.ResetColor();
             return;
         }
 
@@ -112,7 +108,9 @@ class Program
     {
         if (filamentListe.Count == 0)
         {
+            Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine("⚠️ Keine Filamente vorhanden.");
+            Console.ResetColor();
             return;
         }
 
@@ -120,26 +118,39 @@ class Program
         Console.Write("\n➡️ Nummer des gewünschten Filaments: ");
         if (!int.TryParse(Console.ReadLine(), out int auswahl) || auswahl < 1 || auswahl > filamentListe.Count)
         {
+            Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("❌ Ungültige Auswahl.");
+            Console.ResetColor();
             return;
         }
 
         var f = filamentListe[auswahl - 1];
 
-        Console.Write("🧾 Verbrauch in Gramm (z. B. 23,5): ");
-        string verbrauchInput = Console.ReadLine().Replace(',', '.');
-
-        if (!double.TryParse(verbrauchInput, NumberStyles.Any, CultureInfo.InvariantCulture, out double verbrauch))
+        Console.Write("🧾 Verbrauch in Gramm (laut Slicer): ");
+        if (!double.TryParse(Console.ReadLine(), out double verbrauch) || verbrauch <= 0)
         {
-            Console.WriteLine("❌ Ungültiger Verbrauchswert.");
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("❌ Ungültiger Verbrauch.");
+            Console.ResetColor();
+            return;
+        }
+
+        if (verbrauch > f.Gewicht)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("❌ Nicht genug Material vorhanden.");
+            Console.ResetColor();
             return;
         }
 
         double kosten = (verbrauch / 1000.0) * f.PreisProKg;
-        double rest = f.Gewicht - verbrauch;
+        f.Gewicht -= verbrauch;
+        DatenSpeichern();
 
-        Console.WriteLine($"\n💰 Druckkosten: {kosten:F2} €");
-        Console.WriteLine($"📦 Restgewicht von {f.Name}: {rest:F1}g");
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine($"\n💰 Druckkosten: {kosten:F2} € mit {f.Name} ({f.Material})");
+        Console.WriteLine($"📉 Verbleibendes Gewicht: {f.Gewicht:F2}g");
+        Console.ResetColor();
     }
 
     static void DatenSpeichern()
